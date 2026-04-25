@@ -1,0 +1,121 @@
+/* DocApp – custom styles */
+
+/* Hero */
+.hero-section {
+  background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+  color: #fff;
+  padding: 80px 0 60px;
+}
+
+/* Spec badge chips */
+.spec-card {
+  display: inline-block;
+  background: #e7f1ff;
+  color: #0d6efd;
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: .8rem;
+  font-weight: 500;
+  margin: 2px;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.spec-card:hover {
+  background: #0d6efd;
+  color: #fff;
+}
+
+/* Doctor card */
+.doctor-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  transition: transform .2s, box-shadow .2s;
+  overflow: hidden;
+}
+.doctor-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+}
+.doctor-card .card-img-top {
+  height: 180px;
+  object-fit: cover;
+}
+
+/* Avatar circles */
+.avatar-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.avatar-lg {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* Stat card */
+.stat-card {
+  border-radius: 12px;
+  transition: transform .15s;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Generic hover card */
+.hover-card {
+  transition: transform .2s, box-shadow .2s;
+}
+.hover-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.1) !important;
+}
+
+/* Navbar tweaks */
+.navbar-brand {
+  font-weight: 700;
+  letter-spacing: -.3px;
+}
+
+/* Table row action buttons should not wrap awkwardly */
+td form {
+  display: inline;
+}
+
+/* Time-slot radio buttons */
+.slot-btn input[type="radio"] { display: none; }
+.slot-btn label {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: .85rem;
+  transition: all .15s;
+}
+.slot-btn input[type="radio"]:checked + label {
+  background: #0d6efd;
+  color: #fff;
+  border-color: #0d6efd;
+}
+.slot-btn label:hover {
+  border-color: #0d6efd;
+  color: #0d6efd;
+}
+
+/* Footer spacing */
+body {
+  padding-bottom: 40px;
+}

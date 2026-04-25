@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Find Doctors — DocApp</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{layout :: navbar}"></div>
+<div th:replace="~{layout :: alerts}"></div>
+
+<div class="container py-4">
+  <h4 class="fw-bold mb-4"><i class="bi bi-search me-2 text-primary"></i>Find a Doctor</h4>
+
+  <!-- Search bar -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <form th:action="@{/patient/doctors}" method="get" class="row g-2 align-items-end">
+        <div class="col-md-8">
+          <label class="form-label fw-semibold">Search by Specialization</label>
+          <input type="text" name="specialization" class="form-control"
+                 placeholder="e.g. Cardiology, Neurology..." th:value="${specialization}"/>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100">Search</button>
+        </div>
+        <div class="col-md-2">
+          <a th:href="@{/patient/doctors}" class="btn btn-outline-secondary w-100">Clear</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Cached badge -->
+  <p class="text-muted small mb-3">
+    <i class="bi bi-lightning-charge-fill text-warning me-1"></i>
+    Doctor list served from <strong>Memcached (ElastiCache)</strong> cache when available.
+    <span th:text="'Showing ' + ${#lists.size(doctors)} + ' doctor(s).'"></span>
+  </p>
+
+  <!-- Doctor cards -->
+  <div th:if="${#lists.isEmpty(doctors)}" class="text-center py-5 text-muted">
+    <i class="bi bi-person-x fs-1 d-block mb-2"></i>
+    No doctors found for "<span th:text="${specialization}"></span>".
+  </div>
+  <div class="row g-4" th:unless="${#lists.isEmpty(doctors)}">
+    <div class="col-md-6 col-lg-4" th:each="doc : ${doctors}">
+      <div class="card h-100 border-0 shadow-sm doctor-card">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="avatar-circle bg-primary text-white me-3">
+              <span th:text="${#strings.substring(doc.user.name, 0, 1)}">D</span>
+            </div>
+            <div>
+              <h6 class="fw-bold mb-0" th:text="'Dr. ' + ${doc.user.name}">Dr. Name</h6>
+              <small class="text-muted" th:text="${doc.specialization}">Specialization</small>
+            </div>
+          </div>
+          <p class="text-muted small" th:text="${doc.bio != null ? #strings.abbreviate(doc.bio, 100) : ''}"></p>
+          <ul class="list-unstyled small text-muted mb-3">
+            <li><i class="bi bi-award me-2 text-primary"></i><span th:text="${doc.qualification}"></span></li>
+            <li><i class="bi bi-briefcase me-2 text-primary"></i><span th:text="${doc.experience} + ' years experience'"></span></li>
+            <li><i class="bi bi-currency-dollar me-2 text-success"></i><span th:text="'$' + ${doc.consultationFee} + ' consultation fee'"></span></li>
+          </ul>
+        </div>
+        <div class="card-footer bg-white border-0 pt-0">
+          <a th:href="@{/patient/book/{id}(id=${doc.id})}" class="btn btn-primary w-100">
+            <i class="bi bi-calendar-plus me-2"></i>Book Appointment
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

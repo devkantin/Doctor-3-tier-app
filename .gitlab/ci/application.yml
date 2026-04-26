@@ -121,7 +121,6 @@ app:deploy:prod:
       changes:
         - src/**/*
         - pom.xml
-      when: manual
   environment:
     name: production
     url: "http://$EB_PROD_ENV.elasticbeanstalk.com"

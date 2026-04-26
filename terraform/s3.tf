@@ -1,8 +1,9 @@
 data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "artifacts" {
-  bucket = "${var.project}-artifacts-${data.aws_caller_identity.current.account_id}"
-  tags   = { Name = "${var.project}-artifacts" }
+  bucket        = "${var.project}-artifacts-${data.aws_caller_identity.current.account_id}"
+  force_destroy = true   # allows terraform destroy to delete the bucket even when it contains WAR files
+  tags          = { Name = "${var.project}-artifacts" }
 }
 
 resource "aws_s3_bucket_versioning" "artifacts" {

@@ -137,12 +137,31 @@ rds:ready:
     - if: $CI_COMMIT_BRANCH == "develop"
   timeout: 35m
 
-# ── tf:destroy – tear down everything (emergency only) ───────────
+# ── tf:destroy – tear down the ENTIRE stack (emergency only) ─────
+# Destroys (in dependency order):
+#   Elastic Beanstalk env + app → EC2 instances → ALB
+#   RDS MySQL (data lost — skip_final_snapshot = true)
+#   ElastiCache Memcached
+#   Amazon MQ RabbitMQ broker
+#   S3 artifact bucket + ALL WAR files (force_destroy = true)
+#   IAM role + instance profile
+#   Security groups
+#   NAT gateway + Elastic IP
+#   Public/private subnets → route tables → Internet Gateway → VPC
 tf:destroy:
   extends: .terraform:base
   stage: apply
   script:
+    - |
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo "  WARNING: This will DESTROY the entire DocApp AWS stack."
+      echo "  RDS data will be LOST. S3 WAR files will be DELETED."
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo "Resources that will be destroyed:"
+      terraform plan -destroy -no-color 2>&1 | grep -E "^  # |will be destroyed" || true
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     - terraform destroy -auto-approve
+    - echo "All resources destroyed successfully."
   needs: []
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

@@ -2,7 +2,7 @@ data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "artifacts" {
   bucket        = "${var.project}-artifacts-${data.aws_caller_identity.current.account_id}"
-  force_destroy = true   # allows terraform destroy to delete the bucket even when it contains WAR files
+  force_destroy = true # allows terraform destroy to delete the bucket even when it contains WAR files
   tags          = { Name = "${var.project}-artifacts" }
 }
 
@@ -18,6 +18,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "artifacts" {
   rule {
     id     = "expire-old-war-versions"
     status = "Enabled"
+    filter {} # required by AWS provider 5.x — empty filter applies rule to all objects
     noncurrent_version_expiration {
       noncurrent_days = 30
     }

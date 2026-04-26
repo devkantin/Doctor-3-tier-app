@@ -12,7 +12,9 @@
 
 # ── Shared base ───────────────────────────────────────────────────
 .terraform:base:
-  image: hashicorp/terraform:1.9
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]   # override terraform entrypoint so GitLab can run shell commands
   before_script:
     - cd "$TF_ROOT"
     - |

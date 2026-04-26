@@ -55,7 +55,7 @@ tf:plan:
   extends: [.terraform:base, .infra:trigger]
   stage: plan
   script:
-    - terraform plan -out=plan.tfplan -no-color 2>&1 | tee "$CI_PROJECT_DIR/plan.txt"
+    - terraform plan -lock=false -out=plan.tfplan -no-color 2>&1 | tee "$CI_PROJECT_DIR/plan.txt"
   artifacts:
     name: "tf-plan-$CI_COMMIT_REF_SLUG"
     paths:
@@ -70,7 +70,7 @@ tf:apply:
   extends: .terraform:base
   stage: apply
   script:
-    - terraform apply -auto-approve plan.tfplan
+    - terraform apply -auto-approve -lock=false plan.tfplan
     - |
       echo "── Exporting Terraform outputs to GitLab CI/CD variables ──"
       BUCKET=$(terraform output -raw artifact_bucket)
@@ -150,7 +150,7 @@ tf:destroy:
       echo "Resources that will be destroyed:"
       terraform plan -destroy -no-color 2>&1 | grep -E "^  # |will be destroyed" || true
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    - terraform destroy -auto-approve
+    - terraform destroy -auto-approve -lock=false
     - echo "All resources destroyed successfully."
   needs: []
   rules:

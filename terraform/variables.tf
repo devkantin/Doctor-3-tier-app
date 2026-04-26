@@ -82,7 +82,7 @@ variable "mq_password" {
 variable "mq_instance_type" {
   description = "Amazon MQ broker instance type"
   type        = string
-  default     = "mq.t3.micro"
+  default     = "mq.m5.large"
 }
 
 # ── Elastic Beanstalk ──────────────────────────────────────────────

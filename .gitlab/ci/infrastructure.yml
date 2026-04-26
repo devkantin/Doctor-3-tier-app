@@ -32,6 +32,7 @@
     AWS_DEFAULT_REGION: "$AWS_DEFAULT_REGION"
     TF_VAR_db_password: "$TF_VAR_db_password"
     TF_VAR_mq_password: "$TF_VAR_mq_password"
+    GITLAB_API_TOKEN: "$GITLAB_API_TOKEN"
 
 # ── Trigger rule (reused below) ───────────────────────────────────
 .infra:trigger:
@@ -76,6 +77,30 @@ tf:apply:
   stage: apply
   script:
     - terraform apply -auto-approve plan.tfplan
+    - |
+      echo "── Exporting Terraform outputs to GitLab CI/CD variables ──"
+      BUCKET=$(terraform output -raw artifact_bucket)
+      echo "artifact_bucket = ${BUCKET}"
+
+      # Try PUT (update existing variable), fall back to POST (create new)
+      HTTP_STATUS=$(curl -s -o /tmp/gl_response.json -w "%{http_code}" \
+        --request PUT \
+        --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
+        --header "Content-Type: application/json" \
+        --data "{\"value\":\"${BUCKET}\",\"protected\":false,\"masked\":false}" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/variables/S3_ARTIFACT_BUCKET")
+
+      if [ "$HTTP_STATUS" = "404" ]; then
+        curl -s --fail \
+          --request POST \
+          --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
+          --header "Content-Type: application/json" \
+          --data "{\"key\":\"S3_ARTIFACT_BUCKET\",\"value\":\"${BUCKET}\",\"protected\":false,\"masked\":false}" \
+          "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/variables"
+        echo "S3_ARTIFACT_BUCKET created in GitLab CI/CD variables"
+      else
+        echo "S3_ARTIFACT_BUCKET updated (HTTP ${HTTP_STATUS})"
+      fi
   needs:
     - job: tf:plan
       artifacts: true

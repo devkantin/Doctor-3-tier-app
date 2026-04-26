@@ -11,6 +11,8 @@
 #   AWS_DEFAULT_REGION         – e.g. us-east-1
 #   TF_VAR_db_password         – masked + protected
 #   TF_VAR_mq_password         – masked + protected
+#   GITLAB_API_TOKEN           – project/personal access token with api scope
+#                                (used by tf:apply to auto-set S3_ARTIFACT_BUCKET)
 #   EB_APP_NAME                – docapp
 #   EB_PROD_ENV                – docapp-prod
 #   EB_STAGING_ENV             – docapp-staging  (optional, for develop branch)

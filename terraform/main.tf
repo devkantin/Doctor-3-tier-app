@@ -8,7 +8,7 @@ terraform {
   }
   # Backend config is injected via -backend-config flags in CI.
   # For local dev, run: terraform init -backend-config=backend.local.hcl
-  backend "http" {}
+  backend "s3" {}
 }
 
 provider "aws" {

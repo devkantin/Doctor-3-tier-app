@@ -23,7 +23,8 @@ stages:
   - validate      # tf:fmt + tf:validate  (always, on terraform changes)
   - plan          # tf:plan               (on terraform changes)
   - apply         # tf:apply              (manual gate — pipeline pauses here until infra is confirmed)
-  - build         # app:build             (starts only after infra stage clears)
+  - readiness     # rds:ready             (waits for RDS to report 'available' before app starts)
+  - build         # app:build             (starts only after RDS is confirmed up)
   - test          # app:test
   - deploy        # app:deploy:staging (auto) / app:deploy:prod (manual)
 

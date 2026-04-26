@@ -114,6 +114,29 @@ tf:apply:
     name: production/infrastructure
     action: start
 
+# ── rds:ready – block app pipeline until RDS is available ────────
+rds:ready:
+  image: python:3.12-slim
+  stage: readiness
+  before_script:
+    - pip install --quiet awscli
+  script:
+    - |
+      RDS_ID="${EB_APP_NAME}-mysql"
+      echo "Waiting for RDS instance '${RDS_ID}' to become available..."
+      echo "This can take up to 10 min on first provision, ~5 s if already running."
+      aws rds wait db-instance-available \
+        --db-instance-identifier "${RDS_ID}"
+      echo "RDS instance is available. Proceeding to build stage."
+  variables:
+    AWS_ACCESS_KEY_ID: "$AWS_ACCESS_KEY_ID"
+    AWS_SECRET_ACCESS_KEY: "$AWS_SECRET_ACCESS_KEY"
+    AWS_DEFAULT_REGION: "$AWS_DEFAULT_REGION"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "develop"
+  timeout: 35m
+
 # ── tf:destroy – tear down everything (emergency only) ───────────
 tf:destroy:
   extends: .terraform:base

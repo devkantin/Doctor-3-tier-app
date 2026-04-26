@@ -23,6 +23,7 @@
     entrypoint: [""]
   before_script:
     - cd "$TF_ROOT"
+    - find .terraform/providers -type f -name "terraform-provider-*" -exec chmod +x {} + 2>/dev/null || true
 
 # ── Trigger rule (reused below) ───────────────────────────────────
 .infra:trigger:

@@ -12,6 +12,7 @@ import org.springframework.test.context.TestPropertySource;
     "spring.datasource.username=sa",
     "spring.datasource.password=",
     "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+    "spring.jpa.hibernate.ddl-auto=create-drop",
     "memcached.host=localhost",
     "memcached.port=11211"
 })

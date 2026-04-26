@@ -1,8 +1,15 @@
 package com.docapp.service;
 
-import com.docapp.model.*;
-import com.docapp.repository.*;
-import org.springframework.security.core.userdetails.*;
+import com.docapp.model.Doctor;
+import com.docapp.model.Patient;
+import com.docapp.model.Role;
+import com.docapp.model.User;
+import com.docapp.repository.DoctorRepository;
+import com.docapp.repository.PatientRepository;
+import com.docapp.repository.UserRepository;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

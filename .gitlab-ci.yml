@@ -20,12 +20,12 @@
 # ─────────────────────────────────────────────────────────────────
 
 stages:
-  - validate      # tf fmt/validate  +  code compile check
-  - build         # mvn package -DskipTests
-  - test          # mvn test (H2 in-memory, no external services)
-  - plan          # terraform plan
-  - apply         # terraform apply  (main only, manual)
-  - deploy        # eb deploy  (staging auto / prod manual)
+  - validate      # tf:fmt + tf:validate  (always, on terraform changes)
+  - plan          # tf:plan               (on terraform changes)
+  - apply         # tf:apply              (manual gate — pipeline pauses here until infra is confirmed)
+  - build         # app:build             (starts only after infra stage clears)
+  - test          # app:test
+  - deploy        # app:deploy:staging (auto) / app:deploy:prod (manual)
 
 variables:
   TF_ROOT: "$CI_PROJECT_DIR/terraform"

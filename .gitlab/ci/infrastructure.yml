@@ -5,25 +5,35 @@
 # State is stored in an S3 backend.
 #
 # Workflow:
-#   All branches  →  init → fmt (warn) → validate → plan
-#   main only     →  apply  (manual gate)
+#   All branches  →  fmt (warn) → validate → plan
+#   main only     →  apply  (automatic)
 #   main only     →  destroy (manual gate, emergency only)
 #
-# terraform init runs ONCE in tf:init and the resulting .terraform/
-# directory is passed as an artifact to all downstream jobs so that
-# providers are never downloaded more than once per pipeline.
+# Provider binaries are cached by .terraform.lock.hcl hash so that
+# terraform init only downloads from the registry on a cache miss
+# (first run or after provider version change). All subsequent jobs
+# restore from cache and init completes in ~2 s.
 # ─────────────────────────────────────────────────────────────────
 
 # ── Shared base ───────────────────────────────────────────────────
-# Note: no terraform init here — tf:init handles it and downstream
-# jobs receive .terraform/ via artifact, so init is skipped entirely.
 .terraform:base:
   image:
     name: hashicorp/terraform:1.9
     entrypoint: [""]
+  cache:
+    key:
+      files:
+        - terraform/.terraform.lock.hcl
+    paths:
+      - terraform/.terraform/providers/
   before_script:
     - cd "$TF_ROOT"
-    - find .terraform/providers -type f -name "terraform-provider-*" -exec chmod +x {} + 2>/dev/null || true
+    - |
+      terraform init -reconfigure \
+        -backend-config="bucket=${TF_STATE_BUCKET}" \
+        -backend-config="key=docapp/terraform.tfstate" \
+        -backend-config="region=${AWS_DEFAULT_REGION}" \
+        -backend-config="encrypt=true"
 
 # ── Trigger rule (reused below) ───────────────────────────────────
 .infra:trigger:
@@ -32,29 +42,10 @@
         - terraform/**/*
         - .gitlab/ci/infrastructure.yml
 
-# ── tf:init – initialize once, share .terraform/ via artifact ─────
-tf:init:
-  extends: [.terraform:base, .infra:trigger]
-  stage: validate
-  script:
-    - |
-      terraform init -reconfigure \
-        -backend-config="bucket=${TF_STATE_BUCKET}" \
-        -backend-config="key=docapp/terraform.tfstate" \
-        -backend-config="region=${AWS_DEFAULT_REGION}" \
-        -backend-config="encrypt=true"
-  artifacts:
-    paths:
-      - terraform/.terraform/
-    expire_in: 1 day
-
 # ── tf:fmt – formatting check (informational) ─────────────────────
 tf:fmt:
   extends: [.terraform:base, .infra:trigger]
   stage: validate
-  needs:
-    - job: tf:init
-      artifacts: true
   script:
     - terraform fmt -check -recursive -diff
   allow_failure: true
@@ -63,9 +54,6 @@ tf:fmt:
 tf:validate:
   extends: [.terraform:base, .infra:trigger]
   stage: validate
-  needs:
-    - job: tf:init
-      artifacts: true
   script:
     - terraform validate -no-color
 
@@ -73,27 +61,21 @@ tf:validate:
 tf:plan:
   extends: [.terraform:base, .infra:trigger]
   stage: plan
-  needs:
-    - job: tf:init
-      artifacts: true
-    - tf:validate
   script:
     - terraform plan -lock=false -out=plan.tfplan -no-color 2>&1 | tee "$CI_PROJECT_DIR/plan.txt"
   artifacts:
     name: "tf-plan-$CI_COMMIT_REF_SLUG"
     paths:
       - terraform/plan.tfplan
-      - terraform/.terraform/    # passed through so tf:apply has it without re-init
       - plan.txt
     expire_in: 7 days
+  needs:
+    - tf:validate
 
-# ── tf:apply – apply the plan (main branch, manual gate) ─────────
+# ── tf:apply – apply the plan (main branch, automatic) ───────────
 tf:apply:
   extends: .terraform:base
   stage: apply
-  needs:
-    - job: tf:plan
-      artifacts: true    # receives plan.tfplan + .terraform/ from tf:plan
   script:
     - apk add --no-cache curl
     - terraform apply -auto-approve -lock=false plan.tfplan
@@ -102,7 +84,6 @@ tf:apply:
       BUCKET=$(terraform output -raw artifact_bucket)
       echo "artifact_bucket = ${BUCKET}"
 
-      # Try PUT (update existing variable), fall back to POST (create new)
       HTTP_STATUS=$(curl -s -o /tmp/gl_response.json -w "%{http_code}" \
         --request PUT \
         --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
@@ -121,6 +102,9 @@ tf:apply:
       else
         echo "S3_ARTIFACT_BUCKET updated (HTTP ${HTTP_STATUS})"
       fi
+  needs:
+    - job: tf:plan
+      artifacts: true
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes:
@@ -150,30 +134,10 @@ rds:ready:
   timeout: 35m
 
 # ── tf:destroy – tear down the ENTIRE stack (emergency only) ─────
-# Destroys (in dependency order):
-#   Elastic Beanstalk env + app → EC2 instances → ALB
-#   RDS MySQL (data lost — skip_final_snapshot = true)
-#   ElastiCache Memcached
-#   Amazon MQ RabbitMQ broker
-#   S3 artifact bucket + ALL WAR files (force_destroy = true)
-#   IAM role + instance profile
-#   Security groups
-#   NAT gateway + Elastic IP
-#   Public/private subnets → route tables → Internet Gateway → VPC
-#
-# This job runs its own terraform init because it is a standalone
-# emergency action — it must not depend on artifacts from previous
-# pipeline stages that may have expired.
 tf:destroy:
   extends: .terraform:base
   stage: apply
   script:
-    - |
-      terraform init -reconfigure \
-        -backend-config="bucket=${TF_STATE_BUCKET}" \
-        -backend-config="key=docapp/terraform.tfstate" \
-        -backend-config="region=${AWS_DEFAULT_REGION}" \
-        -backend-config="encrypt=true"
     - |
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       echo "  WARNING: This will DESTROY the entire DocApp AWS stack."

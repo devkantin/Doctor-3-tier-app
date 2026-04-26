@@ -6,7 +6,7 @@ resource "aws_elastic_beanstalk_application" "docapp" {
 resource "aws_elastic_beanstalk_environment" "docapp" {
   name                = "${var.project}-${var.env}"
   application         = aws_elastic_beanstalk_application.docapp.name
-  solution_stack_name = data.aws_elastic_beanstalk_solution_stack.tomcat.name
+  solution_stack_name = var.eb_solution_stack
   tier                = "WebServer"
 
   # ── VPC placement ─────────────────────────────────────────────

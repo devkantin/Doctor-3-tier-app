@@ -86,6 +86,12 @@ variable "mq_instance_type" {
 }
 
 # ── Elastic Beanstalk ──────────────────────────────────────────────
+variable "eb_solution_stack" {
+  description = "Elastic Beanstalk solution stack name"
+  type        = string
+  default     = "64bit Amazon Linux 2023 v5.13.1 running Tomcat 11 with Corretto 25"
+}
+
 variable "ec2_instance_type" {
   description = "EC2 instance type for Beanstalk application servers"
   type        = string

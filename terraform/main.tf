@@ -27,7 +27,3 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-data "aws_elastic_beanstalk_solution_stack" "tomcat" {
-  most_recent = true
-  name_regex  = "^64bit Amazon Linux 2023 .* running Tomcat 10\\.1.*$"
-}

@@ -1,0 +1,30 @@
+# Copy this file to terraform.tfvars and fill in your values.
+# terraform.tfvars is git-ignored — never commit real credentials.
+
+aws_region = "us-east-1"
+project    = "docapp"
+env        = "prod"
+
+# ── RDS ──────────────────────────────────────────────────────────
+db_name           = "docappdb"
+db_username       = "docapp"
+db_password       = "ChangeMe_StrongDBPassword123!"
+db_instance_class = "db.t3.micro"
+db_multi_az       = false
+
+# ── ElastiCache ───────────────────────────────────────────────────
+cache_node_type = "cache.t3.micro"
+cache_num_nodes = 1
+
+# ── Amazon MQ ─────────────────────────────────────────────────────
+mq_username      = "docapp"
+mq_password      = "ChangeMe_StrongMQPassword123!"   # min 12 chars
+mq_instance_type = "mq.t3.micro"
+
+# ── Elastic Beanstalk ─────────────────────────────────────────────
+ec2_instance_type = "t3.small"
+min_instances     = 1
+max_instances     = 2
+
+# Optional: set to your key pair name to enable SSH access
+# keypair_name = "my-aws-keypair"

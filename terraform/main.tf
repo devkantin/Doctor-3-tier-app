@@ -6,6 +6,9 @@ terraform {
       version = "~> 5.0"
     }
   }
+  # Backend config is injected via -backend-config flags in CI.
+  # For local dev, run: terraform init -backend-config=backend.local.hcl
+  backend "http" {}
 }
 
 provider "aws" {

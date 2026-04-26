@@ -1,0 +1,12 @@
+# Local development backend config for GitLab-managed Terraform state.
+# Copy to backend.local.hcl (git-ignored) and fill in your values.
+# Usage: terraform init -reconfigure -backend-config=backend.local.hcl
+
+address        = "https://gitlab.com/api/v4/projects/YOUR_PROJECT_ID/terraform/state/docapp"
+lock_address   = "https://gitlab.com/api/v4/projects/YOUR_PROJECT_ID/terraform/state/docapp/lock"
+unlock_address = "https://gitlab.com/api/v4/projects/YOUR_PROJECT_ID/terraform/state/docapp/lock"
+username       = "YOUR_GITLAB_USERNAME"
+password       = "YOUR_GITLAB_PERSONAL_ACCESS_TOKEN"  # needs api scope
+lock_method    = "POST"
+unlock_method  = "DELETE"
+retry_wait_min = 5

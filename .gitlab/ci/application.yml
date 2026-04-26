@@ -1,0 +1,132 @@
+# ─────────────────────────────────────────────────────────────────
+# Application pipeline – Maven build + Elastic Beanstalk deploy
+#
+# Triggers when src/, pom.xml, or this file changes.
+#
+# Workflow:
+#   All branches   →  build (WAR) + test (H2 in-memory) in parallel
+#   develop branch →  deploy to staging  (automatic)
+#   main branch    →  deploy to prod     (manual gate)
+# ─────────────────────────────────────────────────────────────────
+
+# ── Shared bases ──────────────────────────────────────────────────
+.maven:base:
+  image: maven:3.9-eclipse-temurin-17
+
+.deploy:base:
+  image: python:3.12-slim
+  before_script:
+    - pip install --quiet awscli
+  variables:
+    AWS_ACCESS_KEY_ID: "$AWS_ACCESS_KEY_ID"
+    AWS_SECRET_ACCESS_KEY: "$AWS_SECRET_ACCESS_KEY"
+    AWS_DEFAULT_REGION: "$AWS_DEFAULT_REGION"
+
+# ── Trigger rule ──────────────────────────────────────────────────
+.app:trigger:
+  rules:
+    - changes:
+        - src/**/*
+        - pom.xml
+        - .gitlab/ci/application.yml
+
+# ── Build: compile + package WAR (tests skipped here) ─────────────
+app:build:
+  extends: [.maven:base, .app:trigger]
+  stage: build
+  script:
+    - mvn package -DskipTests $MAVEN_OPTS
+  artifacts:
+    name: "docapp-war-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - target/docapp.war
+    expire_in: 7 days
+
+# ── Test: unit + integration tests with H2 in-memory DB ──────────
+app:test:
+  extends: [.maven:base, .app:trigger]
+  stage: test
+  script:
+    - mvn test $MAVEN_OPTS
+  needs:
+    - app:build
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - target/surefire-reports/TEST-*.xml
+    expire_in: 7 days
+
+# ── Deploy helper script (reused by staging + prod) ───────────────
+.deploy:script: &deploy_script |
+  set -e
+  VERSION="v${CI_PIPELINE_IID}-${CI_COMMIT_SHORT_SHA}"
+  echo "Deploying version: $VERSION to $TARGET_ENV"
+
+  # Locate EB's S3 bucket for this account/region
+  S3_BUCKET=$(aws elasticbeanstalk describe-storage-location \
+    --query 'S3Bucket' --output text)
+
+  echo "Uploading WAR to s3://${S3_BUCKET}/docapp/${VERSION}.war ..."
+  aws s3 cp target/docapp.war "s3://${S3_BUCKET}/docapp/${VERSION}.war"
+
+  echo "Creating application version ..."
+  aws elasticbeanstalk create-application-version \
+    --application-name "$EB_APP_NAME" \
+    --version-label "$VERSION" \
+    --source-bundle "S3Bucket=${S3_BUCKET},S3Key=docapp/${VERSION}.war" \
+    --no-auto-create-application
+
+  echo "Updating environment $TARGET_ENV ..."
+  aws elasticbeanstalk update-environment \
+    --environment-name "$TARGET_ENV" \
+    --version-label "$VERSION"
+
+  echo "Waiting for deployment to complete (up to 20 min) ..."
+  aws elasticbeanstalk wait environment-updated \
+    --environment-names "$TARGET_ENV"
+
+  echo "Deployment complete."
+
+# ── Deploy: staging (auto on develop branch) ─────────────────────
+app:deploy:staging:
+  extends: .deploy:base
+  stage: deploy
+  variables:
+    TARGET_ENV: "$EB_STAGING_ENV"
+  script:
+    - *deploy_script
+  needs:
+    - job: app:build
+      artifacts: true
+    - app:test
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+      changes:
+        - src/**/*
+        - pom.xml
+  environment:
+    name: staging
+    url: "http://$EB_STAGING_ENV.elasticbeanstalk.com"
+
+# ── Deploy: production (manual gate on main branch) ───────────────
+app:deploy:prod:
+  extends: .deploy:base
+  stage: deploy
+  variables:
+    TARGET_ENV: "$EB_PROD_ENV"
+  script:
+    - *deploy_script
+  needs:
+    - job: app:build
+      artifacts: true
+    - app:test
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - src/**/*
+        - pom.xml
+      when: manual
+  environment:
+    name: production
+    url: "http://$EB_PROD_ENV.elasticbeanstalk.com"

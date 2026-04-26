@@ -1,0 +1,43 @@
+# ─────────────────────────────────────────────────────────────────
+# DocApp – GitLab CI/CD
+#
+# Two pipelines in one file:
+#   Infrastructure  → triggers on changes to terraform/**
+#   Application     → triggers on changes to src/** or pom.xml
+#
+# Required CI/CD variables (Settings → CI/CD → Variables):
+#   AWS_ACCESS_KEY_ID          – IAM user with EB + RDS + MQ + ElastiCache perms
+#   AWS_SECRET_ACCESS_KEY
+#   AWS_DEFAULT_REGION         – e.g. us-east-1
+#   TF_VAR_db_password         – masked + protected
+#   TF_VAR_mq_password         – masked + protected
+#   EB_APP_NAME                – docapp
+#   EB_PROD_ENV                – docapp-prod
+#   EB_STAGING_ENV             – docapp-staging  (optional, for develop branch)
+# ─────────────────────────────────────────────────────────────────
+
+stages:
+  - validate      # tf fmt/validate  +  code compile check
+  - build         # mvn package -DskipTests
+  - test          # mvn test (H2 in-memory, no external services)
+  - plan          # terraform plan
+  - apply         # terraform apply  (main only, manual)
+  - deploy        # eb deploy  (staging auto / prod manual)
+
+variables:
+  TF_ROOT: "$CI_PROJECT_DIR/terraform"
+  TF_STATE_NAME: "docapp"
+  MAVEN_OPTS: >-
+    -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository
+    -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN
+    -B
+
+# Maven dependency cache – shared across branches
+cache:
+  key: "maven-$CI_COMMIT_REF_SLUG"
+  paths:
+    - .m2/repository/
+
+include:
+  - local: .gitlab/ci/infrastructure.yml
+  - local: .gitlab/ci/application.yml

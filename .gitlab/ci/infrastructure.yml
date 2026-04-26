@@ -52,15 +52,11 @@ aws:debug:
   script:
     - echo "=== Variable injection check ==="
     - echo "AWS_DEFAULT_REGION = [${AWS_DEFAULT_REGION}]"
-    - echo "Key ID length      = $(printf '%s' "$AWS_ACCESS_KEY_ID" | wc -c)"
-    - echo "Key ID prefix      = $(printf '%s' "$AWS_ACCESS_KEY_ID" | cut -c1-4)"
-    - echo "Secret length      = $(printf '%s' "$AWS_SECRET_ACCESS_KEY" | wc -c)"
+    - echo "Key ID length      = $(printf '%s' "${AWS_ACCESS_KEY_ID}" | wc -c)"
+    - echo "Key ID prefix      = $(printf '%s' "${AWS_ACCESS_KEY_ID}" | cut -c1-4)"
+    - echo "Secret length      = $(printf '%s' "${AWS_SECRET_ACCESS_KEY}" | wc -c)"
     - echo "=== STS call ==="
-    - aws sts get-caller-identity
-  variables:
-    AWS_ACCESS_KEY_ID: "$AWS_ACCESS_KEY_ID"
-    AWS_SECRET_ACCESS_KEY: "$AWS_SECRET_ACCESS_KEY"
-    AWS_DEFAULT_REGION: "$AWS_DEFAULT_REGION"
+    - AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}" aws sts get-caller-identity
   rules:
     - changes:
         - terraform/**/*

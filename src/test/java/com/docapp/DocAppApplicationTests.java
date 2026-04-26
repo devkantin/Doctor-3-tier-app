@@ -1,7 +1,9 @@
 package com.docapp;
 
+import net.rubyeye.xmemcached.MemcachedClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
@@ -12,11 +14,12 @@ import org.springframework.test.context.TestPropertySource;
     "spring.datasource.username=sa",
     "spring.datasource.password=",
     "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
-    "spring.jpa.hibernate.ddl-auto=create-drop",
-    "memcached.host=localhost",
-    "memcached.port=11211"
+    "spring.jpa.hibernate.ddl-auto=create-drop"
 })
 class DocAppApplicationTests {
+
+    @MockBean
+    MemcachedClient memcachedClient;
 
     @Test
     void contextLoads() {

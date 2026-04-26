@@ -1,3 +1,8 @@
+output "eb_solution_stack" {
+  description = "Resolved Elastic Beanstalk solution stack name"
+  value       = data.aws_elastic_beanstalk_solution_stack.tomcat.name
+}
+
 output "artifact_bucket" {
   description = "S3 bucket for WAR deployment artifacts — set this as S3_ARTIFACT_BUCKET in GitLab CI/CD variables"
   value       = aws_s3_bucket.artifacts.bucket

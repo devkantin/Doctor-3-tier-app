@@ -1,3 +1,8 @@
+output "artifact_bucket" {
+  description = "S3 bucket for WAR deployment artifacts — set this as S3_ARTIFACT_BUCKET in GitLab CI/CD variables"
+  value       = aws_s3_bucket.artifacts.bucket
+}
+
 output "app_url" {
   description = "Elastic Beanstalk application URL"
   value       = "http://${aws_elastic_beanstalk_environment.docapp.cname}"

@@ -14,6 +14,7 @@
 #   EB_APP_NAME                – docapp
 #   EB_PROD_ENV                – docapp-prod
 #   EB_STAGING_ENV             – docapp-staging  (optional, for develop branch)
+#   S3_ARTIFACT_BUCKET         – value of `terraform output artifact_bucket`
 # ─────────────────────────────────────────────────────────────────
 
 stages:

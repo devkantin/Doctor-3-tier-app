@@ -33,3 +33,25 @@ resource "aws_iam_instance_profile" "beanstalk_ec2" {
   name = "${var.project}-beanstalk-ec2-profile"
   role = aws_iam_role.beanstalk_ec2.name
 }
+
+# Allow EC2 instances to read WAR artifacts from the deployment bucket
+resource "aws_iam_role_policy" "artifacts_s3" {
+  name = "${var.project}-artifacts-s3"
+  role = aws_iam_role.beanstalk_ec2.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:GetObjectVersion"]
+        Resource = "${aws_s3_bucket.artifacts.arn}/*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
+        Resource = aws_s3_bucket.artifacts.arn
+      }
+    ]
+  })
+}

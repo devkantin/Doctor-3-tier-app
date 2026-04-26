@@ -4,9 +4,12 @@
 # Triggers when src/, pom.xml, or this file changes.
 #
 # Workflow:
-#   All branches   →  build (WAR) + test (H2 in-memory) in parallel
+#   All branches   →  build (WAR) then test (H2 in-memory)
 #   develop branch →  deploy to staging  (automatic)
 #   main branch    →  deploy to prod     (manual gate)
+#
+# Additional CI/CD variable required (from `terraform output`):
+#   S3_ARTIFACT_BUCKET  – name of the S3 bucket created by Terraform
 # ─────────────────────────────────────────────────────────────────
 
 # ── Shared bases ──────────────────────────────────────────────────
@@ -57,36 +60,32 @@ app:test:
         - target/surefire-reports/TEST-*.xml
     expire_in: 7 days
 
-# ── Deploy helper script (reused by staging + prod) ───────────────
+# ── Deploy helper script (reused by staging + prod jobs) ──────────
 .deploy:script: &deploy_script |
   set -e
   VERSION="v${CI_PIPELINE_IID}-${CI_COMMIT_SHORT_SHA}"
-  echo "Deploying version: $VERSION to $TARGET_ENV"
+  WAR_KEY="releases/${VERSION}/docapp.war"
 
-  # Locate EB's S3 bucket for this account/region
-  S3_BUCKET=$(aws elasticbeanstalk describe-storage-location \
-    --query 'S3Bucket' --output text)
+  echo "==> Uploading WAR to s3://${S3_ARTIFACT_BUCKET}/${WAR_KEY}"
+  aws s3 cp target/docapp.war "s3://${S3_ARTIFACT_BUCKET}/${WAR_KEY}"
 
-  echo "Uploading WAR to s3://${S3_BUCKET}/docapp/${VERSION}.war ..."
-  aws s3 cp target/docapp.war "s3://${S3_BUCKET}/docapp/${VERSION}.war"
-
-  echo "Creating application version ..."
+  echo "==> Creating EB application version: ${VERSION}"
   aws elasticbeanstalk create-application-version \
     --application-name "$EB_APP_NAME" \
     --version-label "$VERSION" \
-    --source-bundle "S3Bucket=${S3_BUCKET},S3Key=docapp/${VERSION}.war" \
+    --source-bundle "S3Bucket=${S3_ARTIFACT_BUCKET},S3Key=${WAR_KEY}" \
     --no-auto-create-application
 
-  echo "Updating environment $TARGET_ENV ..."
+  echo "==> Deploying ${VERSION} to ${TARGET_ENV}"
   aws elasticbeanstalk update-environment \
     --environment-name "$TARGET_ENV" \
     --version-label "$VERSION"
 
-  echo "Waiting for deployment to complete (up to 20 min) ..."
+  echo "==> Waiting for deployment to complete (up to 20 min) ..."
   aws elasticbeanstalk wait environment-updated \
     --environment-names "$TARGET_ENV"
 
-  echo "Deployment complete."
+  echo "==> Done. App URL: http://${TARGET_ENV}.elasticbeanstalk.com"
 
 # ── Deploy: staging (auto on develop branch) ─────────────────────
 app:deploy:staging:

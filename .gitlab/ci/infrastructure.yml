@@ -66,6 +66,7 @@ tf:apply:
   extends: .terraform:base
   stage: apply
   script:
+    - apk add --no-cache curl
     - terraform apply -auto-approve -lock=false plan.tfplan
     - |
       echo "── Exporting Terraform outputs to GitLab CI/CD variables ──"

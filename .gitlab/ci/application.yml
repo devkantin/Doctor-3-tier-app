@@ -34,7 +34,7 @@ app:build:
   extends: [.maven:base, .app:trigger]
   stage: build
   script:
-    - mvn package -DskipTests $MAVEN_OPTS
+    - mvn $MAVEN_CLI_OPTS package -DskipTests
   artifacts:
     name: "docapp-war-$CI_COMMIT_SHORT_SHA"
     paths:
@@ -46,7 +46,7 @@ app:test:
   extends: [.maven:base, .app:trigger]
   stage: test
   script:
-    - mvn test $MAVEN_OPTS
+    - mvn $MAVEN_CLI_OPTS test
   needs:
     - app:build
   artifacts:

@@ -2,6 +2,7 @@ package com.docapp;
 
 import net.rubyeye.xmemcached.MemcachedClient;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestPropertySource;
@@ -20,6 +21,9 @@ class DocAppApplicationTests {
 
     @MockBean
     MemcachedClient memcachedClient;
+
+    @MockBean
+    ConnectionFactory connectionFactory;
 
     @Test
     void contextLoads() {
